@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd">
+
+    <changeSet id="add-tag-1.0.0" author="Fyodor Voropaev">
+        <tagDatabase tag="v.1.0.0"/>
+    </changeSet>
+
+    <include file="2025-02-27-create-country-table.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-city-table.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-hotel-table.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-country-name-index.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-city-name-index.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-city-country-id-index.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-hotel-ostrovok-id-index.xml" relativeToChangelogFile="true"/>
+    <include file="2025-02-27-create-hotel-city-id-index.xml" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

@@ -6,4 +6,6 @@ import lombok.Data;
 public class Region {
     private String type;
     private String slug;
+    private String name;
+    private String country;
 }
