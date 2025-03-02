@@ -2,7 +2,9 @@ package ru.itis.parser.service;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.InjectMock;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.inject.Inject;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.itis.parser.controller.beanparameter.FindAllHotelsParameters;
 import ru.itis.parser.entity.City;
@@ -13,7 +15,6 @@ import ru.itis.parser.repository.CityRepository;
 import ru.itis.parser.repository.CountryRepository;
 import ru.itis.parser.repository.HotelRepository;
 
-import jakarta.transaction.Transactional;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,15 +32,11 @@ public class HotelServiceImplTest {
     @InjectMock
     HotelRepository hotelRepository;
 
+    @Inject
     HotelServiceImpl hotelService;
 
-    @BeforeEach
-    void setUp() {
-        hotelService = new HotelServiceImpl(countryRepository, cityRepository, hotelRepository);
-    }
-
     @Test
-    @Transactional
+    @DisplayName("Method: upsertHotels(...) should save new country and new city and insert hotels, because they are new")
     void testUpsertHotels_NewCountryAndCity() {
         // Arrange
         Region region = new Region();
@@ -75,7 +72,7 @@ public class HotelServiceImplTest {
     }
 
     @Test
-    @Transactional
+    @DisplayName("Method: upsertHotels(...) should do not save new country and new city, because they are exist, and should upsert hotels")
     void testUpsertHotels_ExistingCountryAndCity() {
         // Arrange
         Region region = new Region();
@@ -104,57 +101,81 @@ public class HotelServiceImplTest {
     }
 
     @Test
-    void testFindAllHotelsByFilters_WithCityName() {
+    @DisplayName("Method: findAllHotelsByFilters(...) should return all hotels, because all filter are null")
+    void testFindAllHotelsByFilters_AllFiltersNull() {
         // Arrange
-        FindAllHotelsParameters parameters = new FindAllHotelsParameters(null, null, null, null, null, null, null, "Moscow", null);
-        City city = new City(1L, "Moscow", 1L, "moscow");
-        Hotel hotel = new Hotel();
-        hotel.setCityId(1L);
-        hotel.setName("Hotel A");
+        FindAllHotelsParameters parameters = new FindAllHotelsParameters(null, null, null, null, null, null, null, null, null);
+        List<Hotel> hotels = List.of(new Hotel(), new Hotel());
+        List<City> cities = List.of(new City(1L, "Kazan", 2L, "russia/kazan"));
+        hotels.get(0).setCityId(1L);
+        hotels.get(0).setName("Hotel A");
+        hotels.get(1).setCityId(100L);
+        hotels.get(1).setName("Hotel B");
 
-        when(cityRepository.findByName("Moscow")).thenReturn(List.of(city));
-        when(hotelRepository.findAllByFilters(parameters)).thenReturn(List.of(hotel));
+        when(cityRepository.findAll()).thenReturn(cities);
+        when(hotelRepository.findAllByFilters(parameters)).thenReturn(hotels);
 
         // Act
         List<Hotel> result = hotelService.findAllHotelsByFilters(parameters);
 
         // Assert
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Hotel A");
+        verify(cityRepository).findAll();
+        verify(countryRepository, never()).findByName(any());
+        SoftAssertions softly = new SoftAssertions();
+
+        softly.assertThat(result).hasSize(1);
+        softly.assertThat(result.get(0).getName()).isEqualTo("Hotel A");
+
+        softly.assertAll();
     }
 
     @Test
-    void testFindAllHotelsByFilters_WithCountryName() {
+    @DisplayName("Method: findAllHotelsByFilters(...) should return hotels by cityName and countryName, because they are provided")
+    void testFindAllHotelsByFilters_ByCityAndCountry() {
         // Arrange
-        FindAllHotelsParameters parameters = new FindAllHotelsParameters(null, null, null, null, null, null, null, null, "Russia");
-        Country country = new Country(1L, "Russia");
-        City city = new City(1L, "Moscow", 1L, "moscow");
-        Hotel hotel = new Hotel();
-        hotel.setCityId(1L);
-        hotel.setName("Hotel A");
+        FindAllHotelsParameters parameters = new FindAllHotelsParameters(null, null, null, null, null, null, null, "Orenburg", "Russia");
+        List<Hotel> hotels = List.of(new Hotel(), new Hotel());
+        Country country = new Country(77L, "Russia");
+        List<City> cities = List.of(
+                new City(1L, "Orenburg", 77L, "russia/orenburg"),
+                new City(2L, "Orenburg", 100L, "german/orenburg")
+        );
+        hotels.get(0).setCityId(1L);
+        hotels.get(0).setName("Hotel A");
+        hotels.get(1).setCityId(2L);
+        hotels.get(1).setName("Hotel B");
 
-        when(cityRepository.findAll()).thenReturn(List.of(city));
+        when(cityRepository.findByName("Orenburg")).thenReturn(cities);
         when(countryRepository.findByName("Russia")).thenReturn(Optional.of(country));
-        when(hotelRepository.findAllByFilters(parameters)).thenReturn(List.of(hotel));
+        when(hotelRepository.findAllByFilters(parameters)).thenReturn(hotels);
 
         // Act
         List<Hotel> result = hotelService.findAllHotelsByFilters(parameters);
 
         // Assert
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Hotel A");
+        verify(cityRepository).findByName("Orenburg");
+        verify(countryRepository).findByName("Russia");
+        SoftAssertions softly = new SoftAssertions();
+
+        softly.assertThat(result).hasSize(1);
+        softly.assertThat(result.get(0).getName()).isEqualTo("Hotel A");
+
+        softly.assertAll();
     }
 
     @Test
+    @DisplayName("Method: findAllHotelsByFilters(...) should return empty list, because country with provided name do not exist")
     void testFindAllHotelsByFilters_NoResults() {
         // Arrange
-        FindAllHotelsParameters parameters = new FindAllHotelsParameters(null, null, null, null, null, null, null, "UnknownCity", null);
-        when(cityRepository.findByName("UnknownCity")).thenReturn(List.of());
+        FindAllHotelsParameters parameters = new FindAllHotelsParameters(null, null, null, null, null, null, null, null, "Rossiiskaia Imperiia");
+        when(cityRepository.findAll()).thenReturn(List.of());
+        when(countryRepository.findByName("Rossiiskaia Imperiia")).thenReturn(Optional.empty());
 
         // Act
         List<Hotel> result = hotelService.findAllHotelsByFilters(parameters);
 
         // Assert
+        verify(countryRepository).findByName("Rossiiskaia Imperiia");
         assertThat(result).isEmpty();
     }
 }

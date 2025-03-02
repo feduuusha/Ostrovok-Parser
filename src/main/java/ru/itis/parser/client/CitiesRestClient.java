@@ -28,7 +28,7 @@ public interface CitiesRestClient {
             return new NotFoundException("The cities client responded with HTTP 404");
         }
         if (response.getStatus() == 400) {
-            return new NotFoundException("The cities client responded with HTTP 400");
+            return new BadRequestException("The cities client responded with HTTP 400");
         }
         if (response.getStatus() >= 400) {
             return new ClientErrorException("The cities client responded with client error", response.getStatus());

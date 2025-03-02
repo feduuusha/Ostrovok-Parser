@@ -23,4 +23,9 @@ public class ExceptionMappers {
     public RestResponse<String> mapException(InternalServerErrorException ex) {
         return RestResponse.status(Response.Status.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
+
+    @ServerExceptionMapper
+    public RestResponse<String> mapException(RuntimeException ex) {
+        return RestResponse.status(Response.Status.INTERNAL_SERVER_ERROR, "Unexpected error on server");
+    }
 }
