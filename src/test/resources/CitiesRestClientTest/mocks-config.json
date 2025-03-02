@@ -1,0 +1,90 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/site/multicomplete.json\\?query=Sydney&locale=ru"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "hotels": [],
+          "regions": [
+            {
+              "id": 3341,
+              "type": "City",
+              "name": "Сидней, Новый Южный Уэльс",
+              "country": "Австралия",
+              "country_code": "AU",
+              "currency_code": "AUD",
+              "pretty_slug": "Sydney",
+              "slug": "australia/sydney",
+              "is_sales_closed": false,
+              "is_natdis_critical": false,
+              "name_en": "Sydney",
+              "country_en": "Australia"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/site/multicomplete.json\\?query=500&locale=ru"
+      },
+      "response": {
+        "status": 500,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "type": "about:blank",
+          "title": "Internal Server Error",
+          "status": 500,
+          "detail": "something wrong",
+          "instance": "/api/v1/catalog/brands/500"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/site/multicomplete.json\\?query=400&locale=ru"
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/site/multicomplete.json\\?query=404&locale=ru"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/site/multicomplete.json\\?query=403&locale=ru"
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}

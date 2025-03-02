@@ -1,89 +1,71 @@
 package ru.itis.parser.client;
 
-import io.quarkus.test.InjectMock;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.*;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.*;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.itis.parser.model.MultiComplete;
 
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.ServerErrorException;
-import jakarta.ws.rs.core.Response;
+import jakarta.inject.Inject;
 import ru.itis.parser.model.Region;
 
 import java.util.List;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 
 @QuarkusTest
+@Testcontainers(disabledWithoutDocker = true)
+@QuarkusTestResource(CitiesRestClientResource.class)
 public class CitiesRestClientTest {
 
-    @InjectMock
+    @Inject
     @RestClient
     CitiesRestClient citiesRestClient;
 
-    @BeforeEach
-    void setUp() {
-        Mockito.reset(citiesRestClient);
-    }
-
     @Test
-    void testSearchCitiesSuccess() {
+    @DisplayName("Client should return correct answer, because request is correct")
+    void testSearchCities_Success() {
         // Arrange
-        MultiComplete expectedResponse = new MultiComplete();
-        expectedResponse.setRegions(List.of(new Region(), new Region()));
-        Mockito.when(citiesRestClient.searchCities(anyString())).thenReturn(expectedResponse);
+        String cityName = "Sydney";
+        MultiComplete multiComplete = new MultiComplete();
+        Region region = new Region();
+        region.setName("Сидней, Новый Южный Уэльс");
+        region.setType("City");
+        region.setSlug("australia/sydney");
+        region.setCountry("Австралия");
+        multiComplete.setRegions(List.of(region));
 
         // Act
-        MultiComplete actualResponse = citiesRestClient.searchCities("Moscow");
+        MultiComplete result = citiesRestClient.searchCities(cityName);
 
         // Assert
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse, actualResponse);
+        assertThat(result).isEqualTo(multiComplete);
     }
 
-    @Test
-    void testSearchCitiesBadRequest() {
-        // Arrange
-        Mockito.when(citiesRestClient.searchCities(anyString()))
-                .thenThrow(new BadRequestException("The cities client responded with HTTP 404"));
-
+    @ParameterizedTest
+    @MethodSource("provideCityNameAndExpectedResponses")
+    void testParseHotelsByCityServiceThrowsException(String query, Class<Exception> expectedExceptionType, String expectedMessage) {
         // Act & Assert
-        assertThrows(BadRequestException.class, () -> citiesRestClient.searchCities("UnknownCity"));
+        assertThatExceptionOfType(expectedExceptionType)
+                .isThrownBy(() -> citiesRestClient.searchCities(query))
+                .withMessage(expectedMessage);
     }
 
-    @Test
-    void testSearchCitiesNotFound() {
-        // Arrange
-        Mockito.when(citiesRestClient.searchCities(anyString()))
-                .thenThrow(new NotFoundException("The cities client responded with HTTP 404"));
-
-        // Act & Assert
-        assertThrows(NotFoundException.class, () -> citiesRestClient.searchCities("UnknownCity"));
-    }
-
-    @Test
-    void testSearchCitiesServerError() {
-        // Arrange
-        Mockito.when(citiesRestClient.searchCities(anyString()))
-                .thenThrow(new ServerErrorException("The cities client responded with server error", Response.Status.INTERNAL_SERVER_ERROR));
-
-        // Act & Assert
-        assertThrows(ServerErrorException.class, () -> citiesRestClient.searchCities("Moscow"));
-    }
-
-    @Test
-    void testSearchCitiesClientError() {
-        // Arrange
-        Mockito.when(citiesRestClient.searchCities(anyString()))
-                .thenThrow(new ClientErrorException("The cities client responded with client error", Response.Status.BAD_REQUEST));
-
-        // Act & Assert
-        assertThrows(ClientErrorException.class, () -> citiesRestClient.searchCities("Moscow"));
+    private static Stream<Arguments> provideCityNameAndExpectedResponses() {
+        return Stream.of(
+                Arguments.of("500", ServerErrorException.class, "The cities client responded with server error"),
+                Arguments.of("400", BadRequestException.class, "The cities client responded with HTTP 400"),
+                Arguments.of("404", NotFoundException.class, "The cities client responded with HTTP 404"),
+                Arguments.of("403", ClientErrorException.class, "The cities client responded with client error")
+        );
     }
 }
